@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Scraper Frontend</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+      padding: 20px;
+    }
+    .container {
+      max-width: 800px;
+      background: #fff;
+      padding: 20px;
+      border-radius: 10px;
+      margin: auto;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    h1 {
+      text-align: center;
+      color: #333;
+    }
+    form {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 20px;
+      justify-content: space-between;
+    }
+    input, select, button {
+      padding: 10px;
+      font-size: 16px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+    input, select {
+      flex: 1;
+    }
+    button {
+      background: #0078d7;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #005fa3;
+    }
+    .results {
+      margin-top: 20px;
+    }
+    .card {
+      background: #fafafa;
+      border: 1px solid #ddd;
+      padding: 12px;
+      margin-bottom: 10px;
+      border-radius: 8px;
+    }
+    .card h3 {
+      margin: 0;
+      color: #222;
+    }
+    .card p {
+      margin: 4px 0;
+      color: #555;
+    }
+    .loading {
+      text-align: center;
+      margin-top: 20px;
+      color: #666;
+      font-size: 18px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Places Scraper</h1>
+    <form id="scrapeForm">
+      <input type="text" id="query" placeholder="Enter place name (e.g. Pizza, Hospital)" required />
+      <input type="text" id="location" placeholder="Enter location (optional)" />
+      <input type="number" id="limit" placeholder="Limit" value="10" min="1" />
+      <select id="provider">
+        <option value="osm">OpenStreetMap</option>
+        <option value="google">Google</option>
+      </select>
+      <button type="submit">Search</button>
+    </form>
+
+    <div id="loading" class="loading" style="display:none;">Loading...</div>
+    <div id="results" class="results"></div>
+  </div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const form = document.getElementById("scrapeForm");
+    const resultsDiv = document.getElementById("results");
+    const loading = document.getElementById("loading");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault(); // ✅ stop reload
+
+      const query = document.getElementById("query").value.trim();
+      const location = document.getElementById("location").value.trim();
+      const limit = document.getElementById("limit").value;
+      const provider = document.getElementById("provider").value;
+
+      if (!query) {
+        alert("Please enter a query!");
+        return;
+      }
+
+      resultsDiv.innerHTML = "";
+      loading.style.display = "block";
+
+      try {
+        const params = new URLSearchParams({
+          query,
+          location,
+          limit,
+          provider,
+        });
+
+        const response = await fetch(`http://localhost:4000/api/scrape?${params.toString()}`, {
+          method: "GET",
+        });
+
+        const data = await response.json();
+        loading.style.display = "none";
+
+        if (!data.success) {
+          resultsDiv.innerHTML = `<p style="color:red;">Error: ${data.error}</p>`;
+          return;
+        }
+
+        if (data.data.length === 0) {
+          resultsDiv.innerHTML = "<p>No results found.</p>";
+          return;
+        }
+
+        data.data.forEach((item) => {
+          const card = document.createElement("div");
+          card.className = "card";
+          card.innerHTML = `
+            <h3>${item.name}</h3>
+            <p><strong>Address:</strong> ${item.address}</p>
+            <p><strong>Category:</strong> ${item.category || "N/A"}</p>
+            ${item.phone ? `<p><strong>Phone:</strong> ${item.phone}</p>` : ""}
+            ${item.website ? `<p><strong>Website:</strong> <a href="${item.website}" target="_blank">${item.website}</a></p>` : ""}
+            <p><strong>Lat:</strong> ${item.coordinates.lat}, <strong>Lng:</strong> ${item.coordinates.lng}</p>
+          `;
+          resultsDiv.appendChild(card);
+        });
+      } catch (err) {
+        loading.style.display = "none";
+        resultsDiv.innerHTML = `<p style="color:red;">Error fetching data: ${err.message}</p>`;
+      }
+    });
+  });
+</script>
+ 
+</body>
+</html>
