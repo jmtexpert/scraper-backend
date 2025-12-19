@@ -19,6 +19,8 @@ export async function getTrustpilotReviewUrls(
 
   const browser = await puppeteer.launch({
     headless: false, // 🔥 keep browser OPEN for debugging
+    executablePath:
+    "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
     args: ["--no-sandbox", "--disable-setuid-sandbox"],
     defaultViewport: null,
   });
